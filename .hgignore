@@ -1,0 +1,5 @@
+syntax: glob
+MangoLander.suo
+MangoLander/MangoLander/bin/*
+MangoLander/MangoLander/obj/*
+MangoLander/MangoLanderContent/obj/*
