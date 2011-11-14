@@ -3,3 +3,5 @@ MangoLander.suo
 MangoLander/MangoLander/bin/*
 MangoLander/MangoLander/obj/*
 MangoLander/MangoLanderContent/obj/*
+MangoLander/MangoLander/MangoLander.csproj.Debug.cachefile
+MangoLander/MangoLanderContent/MangoLanderContent.contentproj.user
