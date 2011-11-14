@@ -10,6 +10,8 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 using Microsoft.Xna.Framework.Media;
 
+using MangoLander.Entities;
+
 namespace MangoLander
 {
     /// <summary>
@@ -17,12 +19,18 @@ namespace MangoLander
     /// </summary>
     public class Game1 : Microsoft.Xna.Framework.Game
     {
-        GraphicsDeviceManager graphics;
-        SpriteBatch spriteBatch;
+        GraphicsDeviceManager _graphics;
+        SpriteBatch _spriteBatch;
+
+        // Textures
+        Texture2D _landerTexture;
+
+        // Entities
+        Lander _lander;
 
         public Game1()
         {
-            graphics = new GraphicsDeviceManager(this);
+            _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
 
             // Frame rate is 30 fps by default for Windows Phone.
@@ -40,7 +48,8 @@ namespace MangoLander
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            // Setup entities
+            _lander = new Lander();
 
             base.Initialize();
         }
@@ -52,9 +61,10 @@ namespace MangoLander
         protected override void LoadContent()
         {
             // Create a new SpriteBatch, which can be used to draw textures.
-            spriteBatch = new SpriteBatch(GraphicsDevice);
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            // Load textures
+            _landerTexture = this.Content.Load<Texture2D>(".\\Sprites\\Lander");
         }
 
         /// <summary>
@@ -63,7 +73,7 @@ namespace MangoLander
         /// </summary>
         protected override void UnloadContent()
         {
-            // TODO: Unload any non ContentManager content here
+            this.Content.Unload();
         }
 
         /// <summary>
@@ -77,8 +87,26 @@ namespace MangoLander
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            // TODO: Add your update logic here
+            // Accept touch
+            TouchCollection touches = TouchPanel.GetState();
+            foreach (TouchLocation touch in touches)
+            {
+                if (touch.State == TouchLocationState.Pressed)
+                {
+                    _lander.Position = touch.Position;
+                    _lander.Velocity = new Vector2();
+                }
+            }
 
+            // Gravity
+            Vector2 vel = _lander.Velocity;
+            vel.Y += (float)gameTime.ElapsedGameTime.TotalMilliseconds / 2000;
+            _lander.Velocity = vel;
+
+            Vector2 pos = _lander.Position;
+            pos = pos + vel;
+            _lander.Position = pos;
+            
             base.Update(gameTime);
         }
 
@@ -88,9 +116,12 @@ namespace MangoLander
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.DarkSalmon);
+            GraphicsDevice.Clear(Color.Black);
 
-            // TODO: Add your drawing code here
+            // Draw sprites
+            _spriteBatch.Begin();
+            _spriteBatch.Draw(_landerTexture, _lander.Position, Color.White);
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }
