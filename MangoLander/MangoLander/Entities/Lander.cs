@@ -21,5 +21,21 @@ namespace MangoLander.Entities
             Velocity = new Vector2();
             Fuel = 500;
         }
+
+        public Lander(Vector2 position) :
+            this()
+        {
+            this.Position = position;
+        }
+
+        public void Accelerate(Vector2 accel, TimeSpan elapsedTime)
+        {
+            Velocity += Vector2.Multiply(accel, (float)elapsedTime.TotalSeconds);
+        }
+
+        public void DoMovement(TimeSpan elapsedTime)
+        {
+            Position += Vector2.Multiply(Velocity, (float)elapsedTime.TotalSeconds);
+        }
     }
 }

@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Input.Touch;
 using Microsoft.Xna.Framework.Media;
 
 using MangoLander.Entities;
+using MangoLander.Physics;
 
 namespace MangoLander
 {
@@ -27,6 +28,10 @@ namespace MangoLander
 
         // Entities
         Lander _lander;
+
+        // Forces
+        Gravity _gravity;
+        Thruster _thruster;
 
         public Game1()
         {
@@ -49,7 +54,11 @@ namespace MangoLander
         protected override void Initialize()
         {
             // Setup entities
-            _lander = new Lander();
+            _lander = new Lander(new Vector2(_graphics.PreferredBackBufferWidth / 2, 50));
+
+            // Setup physics
+            _gravity = new Gravity();
+            _thruster = new Thruster();
 
             base.Initialize();
         }
@@ -93,19 +102,20 @@ namespace MangoLander
             {
                 if (touch.State == TouchLocationState.Pressed)
                 {
-                    _lander.Position = touch.Position;
-                    _lander.Velocity = new Vector2();
+                    _thruster.Active = true;
+                }
+                if (touch.State == TouchLocationState.Released)
+                {
+                    _thruster.Active = false;
                 }
             }
 
             // Gravity
-            Vector2 vel = _lander.Velocity;
-            vel.Y += (float)gameTime.ElapsedGameTime.TotalMilliseconds / 2000;
-            _lander.Velocity = vel;
+            _lander.Accelerate(_gravity.GetAcceleration(), gameTime.ElapsedGameTime);
+            _lander.Accelerate(_thruster.GetAcceleration(), gameTime.ElapsedGameTime);
 
-            Vector2 pos = _lander.Position;
-            pos = pos + vel;
-            _lander.Position = pos;
+            // Update lander position
+            _lander.DoMovement(gameTime.ElapsedGameTime);
             
             base.Update(gameTime);
         }
@@ -120,7 +130,7 @@ namespace MangoLander
 
             // Draw sprites
             _spriteBatch.Begin();
-            _spriteBatch.Draw(_landerTexture, _lander.Position, Color.White);
+            _spriteBatch.Draw(_landerTexture, _lander.Position, _thruster.Active ? Color.OrangeRed : Color.White);
             _spriteBatch.End();
 
             base.Draw(gameTime);
