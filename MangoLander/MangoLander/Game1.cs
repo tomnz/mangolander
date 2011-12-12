@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Devices.Sensors;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -33,10 +34,18 @@ namespace MangoLander
         Gravity _gravity;
         Thruster _thruster;
 
+        // Sensors
+        Motion _motion;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+
+            if (Motion.IsSupported)
+            {
+                _motion = new Motion();
+            }
 
             // Frame rate is 30 fps by default for Windows Phone.
             TargetElapsedTime = TimeSpan.FromTicks(333333);
@@ -54,13 +63,27 @@ namespace MangoLander
         protected override void Initialize()
         {
             // Setup entities
-            _lander = new Lander(new Vector2(_graphics.PreferredBackBufferWidth / 2, 50));
+            _lander = new Lander(new Vector2(_graphics.PreferredBackBufferWidth / 2, 100));
 
             // Setup physics
             _gravity = new Gravity();
             _thruster = new Thruster();
 
+            // Setup sensors
+            if (_motion != null)
+            {
+                _motion.CurrentValueChanged += new EventHandler<SensorReadingEventArgs<MotionReading>>(_motion_CurrentValueChanged);
+                _motion.Start();
+            }
+
             base.Initialize();
+        }
+
+        void _motion_CurrentValueChanged(object sender, SensorReadingEventArgs<MotionReading> e)
+        {
+            float rotation = -e.SensorReading.Attitude.Pitch / 1.2f;
+            _lander.Rotation = rotation;
+            _thruster.Rotation = rotation;
         }
 
         /// <summary>
@@ -74,6 +97,10 @@ namespace MangoLander
 
             // Load textures
             _landerTexture = this.Content.Load<Texture2D>(".\\Sprites\\Lander");
+
+            // Initialize lander based on texture
+            _lander.Width = _landerTexture.Width;
+            _lander.Height = _landerTexture.Height;
         }
 
         /// <summary>
@@ -116,7 +143,7 @@ namespace MangoLander
 
             // Update lander position
             _lander.DoMovement(gameTime.ElapsedGameTime);
-            
+
             base.Update(gameTime);
         }
 
@@ -130,7 +157,7 @@ namespace MangoLander
 
             // Draw sprites
             _spriteBatch.Begin();
-            _spriteBatch.Draw(_landerTexture, _lander.Position, _thruster.Active ? Color.OrangeRed : Color.White);
+            _spriteBatch.Draw(_landerTexture, _lander.GetScreenRectangle(), null, _thruster.Active ? Color.OrangeRed : Color.White, _lander.Rotation, _lander.GetScreenOrigin(), SpriteEffects.None, 0);
             _spriteBatch.End();
 
             base.Draw(gameTime);
