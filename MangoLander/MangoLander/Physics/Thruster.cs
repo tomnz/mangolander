@@ -16,6 +16,8 @@ namespace MangoLander.Physics
         public float Strength { get; set; }
         public bool Active { get; set; }
 
+        public float Rotation { get; set; }
+
         // Constructors
         public Thruster()
         {
@@ -36,6 +38,7 @@ namespace MangoLander.Physics
                 return new Vector2();
 
             Vector2 result = new Vector2(0, - this.Strength);
+            result = Vector2.Transform(result, Matrix.CreateRotationZ(this.Rotation));
             return result;
         }
     }
