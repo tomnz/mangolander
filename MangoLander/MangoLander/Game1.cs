@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Media;
 
 using MangoLander.Entities;
 using MangoLander.Physics;
+using MangoLander.Graphics;
 
 namespace MangoLander
 {
@@ -23,6 +24,7 @@ namespace MangoLander
     {
         GraphicsDeviceManager _graphics;
         SpriteBatch _spriteBatch;
+        PrimitiveBatch _primitiveBatch;
 
         // Textures
         Texture2D _landerTexture;
@@ -37,9 +39,15 @@ namespace MangoLander
         // Sensors
         Motion _motion;
 
+        // Level
+        Level _level;
+
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
+            _graphics.SupportedOrientations = DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight;
+            _graphics.IsFullScreen = true;
             Content.RootDirectory = "Content";
 
             if (Motion.IsSupported)
@@ -76,12 +84,20 @@ namespace MangoLander
                 _motion.Start();
             }
 
+            // Setup level
+            _level = Level.GenerateStandardLevel(_graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight, 4, 20);
+
             base.Initialize();
         }
 
         void _motion_CurrentValueChanged(object sender, SensorReadingEventArgs<MotionReading> e)
         {
-            float rotation = -e.SensorReading.Attitude.Pitch / 1.2f;
+            float rotation = e.SensorReading.Attitude.Pitch / 1.2f;
+
+            // Account for the phone being "upside down" in alternate orientations
+            if (this.Window.CurrentOrientation == DisplayOrientation.LandscapeLeft)
+                rotation = -rotation;
+
             _lander.Rotation = rotation;
             _thruster.Rotation = rotation;
         }
@@ -94,6 +110,9 @@ namespace MangoLander
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            // Create a new PrimitiveBatch
+            _primitiveBatch = new PrimitiveBatch(GraphicsDevice);
 
             // Load textures
             _landerTexture = this.Content.Load<Texture2D>(".\\Sprites\\Lander");
@@ -159,6 +178,25 @@ namespace MangoLander
             _spriteBatch.Begin();
             _spriteBatch.Draw(_landerTexture, _lander.GetScreenRectangle(), null, _thruster.Active ? Color.OrangeRed : Color.White, _lander.Rotation, _lander.GetScreenOrigin(), SpriteEffects.None, 0);
             _spriteBatch.End();
+
+            // Draw terrain
+            _primitiveBatch.Begin(PrimitiveType.TriangleList);
+
+            if (_level.Terrain.Count > 1)
+            {
+                for (int i = 0; i < (_level.Terrain.Count - 1); i++)
+                {
+                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i].X, _level.Terrain[i].Y), Color.White);
+                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i + 1].X, _graphics.PreferredBackBufferHeight), Color.White);
+                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i].X, _graphics.PreferredBackBufferHeight), Color.White);
+
+                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i].X, _level.Terrain[i].Y), Color.White);
+                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i + 1].X, _level.Terrain[i + 1].Y), Color.White);
+                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i + 1].X, _graphics.PreferredBackBufferHeight), Color.White);
+                }
+            }
+
+            _primitiveBatch.End();
 
             base.Draw(gameTime);
         }

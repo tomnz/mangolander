@@ -67,6 +67,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Entities\Lander.cs" />
+    <Compile Include="Entities\Level.cs" />
+    <Compile Include="Graphics\PrimitiveBatch.cs" />
     <Compile Include="Physics\Thruster.cs" />
     <Compile Include="Physics\Gravity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
