@@ -8,12 +8,12 @@ namespace MangoLander.Entities
 {
     public class Level
     {
-        private List<Point> _terrain;
-        public List<Point> Terrain { get { return _terrain; } }
+        private List<Vector2> _terrain;
+        public List<Vector2> Terrain { get { return _terrain; } }
 
         public Level()
         {
-            _terrain = new List<Point>();
+            _terrain = new List<Vector2>();
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace MangoLander.Entities
 
             for (int i = 1; i <= width; i += 20)
             {
-                level.Terrain.Add(new Point(i, height / 2 + (up ? 10 : -10)));
+                level.Terrain.Add(new Vector2(i, height / 2 + (up ? 10 : -10)));
                 up = !up;
             }
 
@@ -56,7 +56,7 @@ namespace MangoLander.Entities
 
             for (int i = 1; i <= width; i += stepSize)
             {
-                level.Terrain.Add(new Point(i, (int)y));
+                level.Terrain.Add(new Vector2(i, (int)y));
 
                 y += (rand.NextDouble() * difficulty - (difficulty / 2)) + ((baseY - y) / (difficulty * 2));
             }
