@@ -42,6 +42,9 @@ namespace MangoLander
         // Level
         Level _level;
 
+        // State
+        GameState _currentState;
+
 
         public Game1()
         {
@@ -60,6 +63,9 @@ namespace MangoLander
 
             // Extend battery life under lock.
             InactiveSleepTime = TimeSpan.FromSeconds(1);
+
+            // Initial state
+            _currentState = GameState.Active;
         }
 
         /// <summary>
@@ -142,26 +148,36 @@ namespace MangoLander
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            // Accept touch
-            TouchCollection touches = TouchPanel.GetState();
-            foreach (TouchLocation touch in touches)
+            if (_currentState == GameState.Active)
             {
-                if (touch.State == TouchLocationState.Pressed)
+                // Accept touch
+                TouchCollection touches = TouchPanel.GetState();
+                foreach (TouchLocation touch in touches)
                 {
-                    _thruster.Active = true;
+                    if (touch.State == TouchLocationState.Pressed)
+                    {
+                        _thruster.Active = true;
+                    }
+                    if (touch.State == TouchLocationState.Released)
+                    {
+                        _thruster.Active = false;
+                    }
                 }
-                if (touch.State == TouchLocationState.Released)
+
+                // Gravity
+                _lander.Accelerate(_gravity.GetAcceleration(), gameTime.ElapsedGameTime);
+                _lander.Accelerate(_thruster.GetAcceleration(), gameTime.ElapsedGameTime);
+
+                // Update lander position
+                _lander.DoMovement(gameTime.ElapsedGameTime);
+
+                // Check for collisions
+                if (_lander.DoCollision(_level))
                 {
-                    _thruster.Active = false;
+                    _lander.Dead = true;
+                    _currentState = GameState.GameOver;
                 }
             }
-
-            // Gravity
-            _lander.Accelerate(_gravity.GetAcceleration(), gameTime.ElapsedGameTime);
-            _lander.Accelerate(_thruster.GetAcceleration(), gameTime.ElapsedGameTime);
-
-            // Update lander position
-            _lander.DoMovement(gameTime.ElapsedGameTime);
 
             base.Update(gameTime);
         }
@@ -176,7 +192,7 @@ namespace MangoLander
 
             // Draw sprites
             _spriteBatch.Begin();
-            _spriteBatch.Draw(_landerTexture, _lander.GetScreenRectangle(), null, _thruster.Active ? Color.OrangeRed : Color.White, _lander.Rotation, _lander.GetScreenOrigin(), SpriteEffects.None, 0);
+            _spriteBatch.Draw(_landerTexture, _lander.GetScreenRectangle(), null, _lander.Dead ? Color.Red : (_thruster.Active ? Color.OrangeRed : Color.White), _lander.Rotation, _lander.GetScreenOrigin(), SpriteEffects.None, 0);
             _spriteBatch.End();
 
             // Draw terrain
