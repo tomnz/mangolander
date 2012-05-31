@@ -9,6 +9,15 @@ namespace MangoLander
     {
         Active,
         GameOver,
-        Paused
+        Paused,
+        Menu
+    }
+
+    public enum MenuState
+    {
+        Intro,
+        Main,
+        Settings,
+        Playing
     }
 }

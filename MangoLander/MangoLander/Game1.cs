@@ -12,8 +12,9 @@ using Microsoft.Xna.Framework.Input.Touch;
 using Microsoft.Xna.Framework.Media;
 
 using MangoLander.Entities;
-using MangoLander.Physics;
 using MangoLander.Graphics;
+using MangoLander.Menus;
+using MangoLander.Physics;
 
 namespace MangoLander
 {
@@ -26,16 +27,6 @@ namespace MangoLander
         SpriteBatch _spriteBatch;
         PrimitiveBatch _primitiveBatch;
 
-        // Textures
-        Texture2D _landerTexture;
-
-        // Entities
-        Lander _lander;
-
-        // Forces
-        Gravity _gravity;
-        Thruster _thruster;
-
         // Sensors
         Motion _motion;
 
@@ -43,8 +34,10 @@ namespace MangoLander
         Level _level;
 
         // State
-        GameState _currentState;
+        public GameState CurrentState { get; set; }
 
+        // Menu
+        MenuManager _menus;
 
         public Game1()
         {
@@ -65,7 +58,10 @@ namespace MangoLander
             InactiveSleepTime = TimeSpan.FromSeconds(1);
 
             // Initial state
-            _currentState = GameState.Active;
+            CurrentState = GameState.Menu;
+
+            // Menus
+            _menus = new MenuManager(this);
         }
 
         /// <summary>
@@ -76,12 +72,11 @@ namespace MangoLander
         /// </summary>
         protected override void Initialize()
         {
-            // Setup entities
-            _lander = new Lander(new Vector2(_graphics.PreferredBackBufferWidth / 2, 100));
+            // Setup level
+            _level = Level.GenerateStandardLevel(_graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight, 4, 20);
 
-            // Setup physics
-            _gravity = new Gravity();
-            _thruster = new Thruster();
+            // Setup entities
+            _level.Lander = new Lander(new Vector2(_graphics.PreferredBackBufferWidth / 2, 100));
 
             // Setup sensors
             if (_motion != null)
@@ -90,22 +85,15 @@ namespace MangoLander
                 _motion.Start();
             }
 
-            // Setup level
-            _level = Level.GenerateStandardLevel(_graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight, 4, 20);
-
             base.Initialize();
         }
 
         void _motion_CurrentValueChanged(object sender, SensorReadingEventArgs<MotionReading> e)
         {
-            float rotation = e.SensorReading.Attitude.Pitch / 1.2f;
-
-            // Account for the phone being "upside down" in alternate orientations
-            if (this.Window.CurrentOrientation == DisplayOrientation.LandscapeLeft)
-                rotation = -rotation;
-
-            _lander.Rotation = rotation;
-            _thruster.Rotation = rotation;
+            if (CurrentState == GameState.Active)
+            {
+                _level.InteractMotion(e.SensorReading, this.Window.CurrentOrientation);
+            }
         }
 
         /// <summary>
@@ -121,11 +109,16 @@ namespace MangoLander
             _primitiveBatch = new PrimitiveBatch(GraphicsDevice);
 
             // Load textures
-            _landerTexture = this.Content.Load<Texture2D>(".\\Sprites\\Lander");
+            _level.Lander.LanderTexture = this.Content.Load<Texture2D>(".\\Sprites\\Lander");
+            _menus.Intro.IntroTexture = this.Content.Load<Texture2D>(".\\Sprites\\Title");
+            _menus.MainMenu.BackgroundTexture = this.Content.Load<Texture2D>(".\\Sprites\\Menu-Background");
+
+            // Load fonts
+            _level.UIFont = this.Content.Load<SpriteFont>(".\\Fonts\\UI");
 
             // Initialize lander based on texture
-            _lander.Width = _landerTexture.Width;
-            _lander.Height = _landerTexture.Height;
+            _level.Lander.Width = _level.Lander.LanderTexture.Width;
+            _level.Lander.Height = _level.Lander.LanderTexture.Height;
         }
 
         /// <summary>
@@ -144,39 +137,39 @@ namespace MangoLander
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            // Allows the game to exit
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-                this.Exit();
+            GamePadState gamePadState = GamePad.GetState(PlayerIndex.One);
+            TouchCollection touches = TouchPanel.GetState();
 
-            if (_currentState == GameState.Active)
+            if (CurrentState == GameState.Active || CurrentState == GameState.GameOver || CurrentState == GameState.Paused)
             {
-                // Accept touch
-                TouchCollection touches = TouchPanel.GetState();
-                foreach (TouchLocation touch in touches)
-                {
-                    if (touch.State == TouchLocationState.Pressed)
+                // Allows the game to exit
+                if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+                    this.Exit();
+            }
+
+            switch (CurrentState)
+            {
+                case GameState.Menu:
                     {
-                        _thruster.Active = true;
+                        _menus.Interact(gamePadState, touches);
+                        _menus.Update(gameTime);
                     }
-                    if (touch.State == TouchLocationState.Released)
+                    break;
+                case GameState.Active:
                     {
-                        _thruster.Active = false;
+                        _level.Interact(gamePadState, touches);
+                        _level.Update(gameTime);
+
+                        // Check for collisions
+                        if (_level.Lander.DoCollision(_level))
+                        {
+                            _level.Lander.Dead = true;
+                            CurrentState = GameState.GameOver;
+                        }
                     }
-                }
-
-                // Gravity
-                _lander.Accelerate(_gravity.GetAcceleration(), gameTime.ElapsedGameTime);
-                _lander.Accelerate(_thruster.GetAcceleration(), gameTime.ElapsedGameTime);
-
-                // Update lander position
-                _lander.DoMovement(gameTime.ElapsedGameTime);
-
-                // Check for collisions
-                if (_lander.DoCollision(_level))
-                {
-                    _lander.Dead = true;
-                    _currentState = GameState.GameOver;
-                }
+                    break;
+                default:
+                    break;
             }
 
             base.Update(gameTime);
@@ -190,29 +183,24 @@ namespace MangoLander
         {
             GraphicsDevice.Clear(Color.Black);
 
-            // Draw sprites
-            _spriteBatch.Begin();
-            _spriteBatch.Draw(_landerTexture, _lander.GetScreenRectangle(), null, _lander.Dead ? Color.Red : (_thruster.Active ? Color.OrangeRed : Color.White), _lander.Rotation, _lander.GetScreenOrigin(), SpriteEffects.None, 0);
-            _spriteBatch.End();
-
-            // Draw terrain
-            _primitiveBatch.Begin(PrimitiveType.TriangleList);
-
-            if (_level.Terrain.Count > 1)
+            switch (CurrentState)
             {
-                for (int i = 0; i < (_level.Terrain.Count - 1); i++)
-                {
-                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i].X, _level.Terrain[i].Y), Color.White);
-                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i + 1].X, _graphics.PreferredBackBufferHeight), Color.White);
-                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i].X, _graphics.PreferredBackBufferHeight), Color.White);
-
-                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i].X, _level.Terrain[i].Y), Color.White);
-                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i + 1].X, _level.Terrain[i + 1].Y), Color.White);
-                    _primitiveBatch.AddVertex(new Vector2(_level.Terrain[i + 1].X, _graphics.PreferredBackBufferHeight), Color.White);
-                }
+                case GameState.Active:
+                case GameState.GameOver:
+                case GameState.Paused:
+                    {
+                        _level.Draw(_graphics, _spriteBatch, _primitiveBatch);
+                    }
+                    break;
+                case GameState.Menu:
+                    {
+                        _menus.Draw(_graphics, _spriteBatch, _primitiveBatch);
+                    }
+                    break;
+                default:
+                    break;
             }
 
-            _primitiveBatch.End();
 
             base.Draw(gameTime);
         }

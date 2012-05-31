@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 
 namespace MangoLander.Physics
 {
-    class Gravity
+    public class Gravity
     {
         // Constants
         private const float _DEFAULT_STRENGTH = 15;

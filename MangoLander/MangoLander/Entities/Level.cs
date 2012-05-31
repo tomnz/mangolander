@@ -1,20 +1,64 @@
+using Microsoft.Devices.Sensors;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using MangoLander;
+using MangoLander.Graphics;
+using MangoLander.Physics;
+
 namespace MangoLander.Entities
 {
-    public class Level
+    public class Level : IMotionInteractive, IInteractive, IUpdateable, IRenderable
     {
         private List<Vector2> _terrain;
         public List<Vector2> Terrain { get { return _terrain; } }
+
+        // Entities
+        public Lander Lander { get; set; }
+
+        // Fonts
+        public SpriteFont UIFont { get; set; }
 
         public Level()
         {
             _terrain = new List<Vector2>();
         }
+
+        public void Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, PrimitiveBatch primitiveBatch)
+        {
+            // Draw sprites
+            this.Lander.Draw(graphics, spriteBatch, primitiveBatch);
+
+            // Draw terrain
+            primitiveBatch.Begin(PrimitiveType.TriangleList);
+
+            if (this.Terrain.Count > 1)
+            {
+                for (int i = 0; i < (this.Terrain.Count - 1); i++)
+                {
+                    primitiveBatch.AddVertex(new Vector2(this.Terrain[i].X, this.Terrain[i].Y), Color.White);
+                    primitiveBatch.AddVertex(new Vector2(this.Terrain[i + 1].X, graphics.PreferredBackBufferHeight), Color.White);
+                    primitiveBatch.AddVertex(new Vector2(this.Terrain[i].X, graphics.PreferredBackBufferHeight), Color.White);
+
+                    primitiveBatch.AddVertex(new Vector2(this.Terrain[i].X, this.Terrain[i].Y), Color.White);
+                    primitiveBatch.AddVertex(new Vector2(this.Terrain[i + 1].X, this.Terrain[i + 1].Y), Color.White);
+                    primitiveBatch.AddVertex(new Vector2(this.Terrain[i + 1].X, graphics.PreferredBackBufferHeight), Color.White);
+                }
+            }
+
+            primitiveBatch.End();
+
+            // Draw UI text
+            spriteBatch.Begin();
+            spriteBatch.DrawString(UIFont, string.Format("Fuel: {0:0.0}", this.Lander.Fuel), new Vector2(20, 20), Color.White);
+            spriteBatch.End();
+        }
+
 
         /// <summary>
         /// Generates a simple sawtooth wave
@@ -62,6 +106,21 @@ namespace MangoLander.Entities
             }
 
             return level;
+        }
+
+        public void Update(GameTime gameTime)
+        {
+            this.Lander.Update(gameTime);
+        }
+
+        public void Interact(GamePadState gamePadState, Microsoft.Xna.Framework.Input.Touch.TouchCollection touches)
+        {
+            this.Lander.Interact(gamePadState, touches);
+        }
+
+        public void InteractMotion(MotionReading motion, DisplayOrientation orientation)
+        {
+            this.Lander.InteractMotion(motion, orientation);
         }
     }
 }
