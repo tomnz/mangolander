@@ -2,21 +2,38 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Devices.Sensors;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
+
+using MangoLander.Physics;
+using MangoLander.Graphics;
 
 namespace MangoLander.Entities
 {
-    public class Lander
+    public class Lander : IInteractive, IMotionInteractive, IUpdateable, IRenderable
     {
+        // Constants
+        private const double FUEL_USE_RATE = 5;
+
         // Properties
         public Vector2 Position { get; set; }
         public Vector2 Velocity { get; set; }
+
+        // Forces
+        public Gravity Gravity { get; set; }
+        public Thruster Thruster { get; set; }
 
         // Dimensions
         public int Width { get; set; }
         public int Height { get; set; }
 
         public float Rotation { get; set; }
+
+        // Textures
+        public Texture2D LanderTexture { get; set; }
 
         // State
         public double Fuel { get; set; }
@@ -29,6 +46,8 @@ namespace MangoLander.Entities
             Velocity = new Vector2();
             Fuel = 500;
             Dead = false;
+            Thruster = new Thruster();
+            Gravity = new Gravity();
         }
 
         public Lander(Vector2 position) :
@@ -40,11 +59,6 @@ namespace MangoLander.Entities
         public void Accelerate(Vector2 accel, TimeSpan elapsedTime)
         {
             Velocity += Vector2.Multiply(accel, (float)elapsedTime.TotalSeconds);
-        }
-
-        public void DoMovement(TimeSpan elapsedTime)
-        {
-            Position += Vector2.Multiply(Velocity, (float)elapsedTime.TotalSeconds);
         }
 
         public Rectangle GetScreenRectangle()
@@ -164,6 +178,56 @@ namespace MangoLander.Entities
                 if (ua < 0 || ua > 1 || ub < 0 || ub > 1) ua = 0;
             }
             return ua == 0 ? false : true;
+        }
+
+        public void Interact(GamePadState gamePadState, TouchCollection touches)
+        {
+            foreach (TouchLocation touch in touches)
+            {
+                if (touch.State == TouchLocationState.Pressed)
+                {
+                    this.Thruster.Active = true;
+                }
+                if (touch.State == TouchLocationState.Released)
+                {
+                    this.Thruster.Active = false;
+                }
+            }
+        }
+
+        public void Update(GameTime gameTime)
+        {
+            // Do motion
+            this.Accelerate(this.Gravity.GetAcceleration(), gameTime.ElapsedGameTime);
+            this.Accelerate(this.Thruster.GetAcceleration(), gameTime.ElapsedGameTime);
+
+            Position += Vector2.Multiply(Velocity, (float)gameTime.ElapsedGameTime.TotalSeconds);
+
+            // Fuel usage
+            if (this.Thruster.Active)
+            {
+                this.Fuel -= gameTime.ElapsedGameTime.TotalSeconds * FUEL_USE_RATE;
+            }
+        }
+
+        public void InteractMotion(MotionReading motion, DisplayOrientation orientation)
+        {
+            // Rotate the lander based on the phone's current physical angle
+            float rotation = motion.Attitude.Pitch / 1.2f;
+
+            // Account for the phone being "upside down" in alternate orientations
+            if (orientation == DisplayOrientation.LandscapeLeft)
+                rotation = -rotation;
+
+            this.Rotation = rotation;
+            this.Thruster.Rotation = rotation;
+        }
+
+        public void Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, PrimitiveBatch primitiveBatch)
+        {
+            spriteBatch.Begin();
+            spriteBatch.Draw(this.LanderTexture, this.GetScreenRectangle(), null, this.Dead ? Color.Red : (this.Thruster.Active ? Color.OrangeRed : Color.White), this.Rotation, this.GetScreenOrigin(), SpriteEffects.None, 0);
+            spriteBatch.End();
         }
     }
 }

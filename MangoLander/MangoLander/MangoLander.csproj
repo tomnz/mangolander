@@ -68,7 +68,15 @@
   <ItemGroup>
     <Compile Include="Entities\Lander.cs" />
     <Compile Include="Entities\Level.cs" />
+    <Compile Include="Graphics\IRenderable.cs" />
     <Compile Include="Graphics\PrimitiveBatch.cs" />
+    <Compile Include="IInteractive.cs" />
+    <Compile Include="IMotionInteractive.cs" />
+    <Compile Include="IUpdateable.cs" />
+    <Compile Include="Menus\Intro.cs" />
+    <Compile Include="Menus\MainMenu.cs" />
+    <Compile Include="Menus\MenuManager.cs" />
+    <Compile Include="Menus\Settings.cs" />
     <Compile Include="Physics\Thruster.cs" />
     <Compile Include="Physics\Gravity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

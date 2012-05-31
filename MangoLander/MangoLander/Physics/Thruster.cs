@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework.Input.Touch;
 
 namespace MangoLander.Physics
 {
-    class Thruster
+    public class Thruster
     {
         // Constants
         private const float _DEFAULT_STRENGTH = 60;
