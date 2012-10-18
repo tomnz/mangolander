@@ -34,6 +34,7 @@ namespace MangoLander.Entities
 
         // Textures
         public Texture2D LanderTexture { get; set; }
+        private AnimatedSprite _landerThrustingSprite;
 
         // State
         public double Fuel { get; set; }
@@ -54,6 +55,11 @@ namespace MangoLander.Entities
             this()
         {
             this.Position = position;
+        }
+
+        public void InitializeAnimatedSprites(Texture2D thrusterTexture)
+        {
+            _landerThrustingSprite = new AnimatedSprite(thrusterTexture, 80, 80, 0.05, true);
         }
 
         public void Accelerate(Vector2 accel, TimeSpan elapsedTime)
@@ -187,10 +193,12 @@ namespace MangoLander.Entities
                 if (touch.State == TouchLocationState.Pressed)
                 {
                     this.Thruster.Active = true;
+                    _landerThrustingSprite.Play();
                 }
                 if (touch.State == TouchLocationState.Released)
                 {
                     this.Thruster.Active = false;
+                    _landerThrustingSprite.Stop();
                 }
             }
         }
@@ -208,6 +216,8 @@ namespace MangoLander.Entities
             {
                 this.Fuel -= gameTime.ElapsedGameTime.TotalSeconds * FUEL_USE_RATE;
             }
+
+            _landerThrustingSprite.Update(gameTime);
         }
 
         public void InteractMotion(MotionReading motion, DisplayOrientation orientation)
@@ -226,7 +236,14 @@ namespace MangoLander.Entities
         public void Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, PrimitiveBatch primitiveBatch)
         {
             spriteBatch.Begin();
-            spriteBatch.Draw(this.LanderTexture, this.GetScreenRectangle(), null, this.Dead ? Color.Red : (this.Thruster.Active ? Color.OrangeRed : Color.White), this.Rotation, this.GetScreenOrigin(), SpriteEffects.None, 0);
+            if (this.Thruster.Active)
+            {
+                _landerThrustingSprite.Draw(spriteBatch, this.GetScreenRectangle(), Color.White, this.Rotation, this.GetScreenOrigin(), SpriteEffects.None, 0);
+            }
+            else
+            {
+                spriteBatch.Draw(this.LanderTexture, this.GetScreenRectangle(), null, this.Dead ? Color.Red : Color.White, this.Rotation, this.GetScreenOrigin(), SpriteEffects.None, 0);
+            }
             spriteBatch.End();
         }
     }

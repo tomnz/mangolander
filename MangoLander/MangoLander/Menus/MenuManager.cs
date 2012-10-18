@@ -27,7 +27,7 @@ namespace MangoLander.Menus
             set { _currentState = value; }
         }
 
-        // To be used sparingly: reference to the calling Game clas
+        // To be used sparingly: reference to the calling Game class
         private Game1 _game;
 
         public MenuManager(Game1 game)
