@@ -113,6 +113,9 @@ namespace MangoLander
             _menus.Intro.IntroTexture = this.Content.Load<Texture2D>(".\\Sprites\\Title");
             _menus.MainMenu.BackgroundTexture = this.Content.Load<Texture2D>(".\\Sprites\\Menu-Background");
 
+            // Load sprites
+            _level.Lander.InitializeAnimatedSprites(this.Content.Load<Texture2D>(".\\Sprites\\Lander-Thrusting"));
+
             // Load fonts
             _level.UIFont = this.Content.Load<SpriteFont>(".\\Fonts\\UI");
 

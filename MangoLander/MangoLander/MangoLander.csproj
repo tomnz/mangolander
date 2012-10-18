@@ -68,6 +68,7 @@
   <ItemGroup>
     <Compile Include="Entities\Lander.cs" />
     <Compile Include="Entities\Level.cs" />
+    <Compile Include="Graphics\AnimatedSprite.cs" />
     <Compile Include="Graphics\IRenderable.cs" />
     <Compile Include="Graphics\PrimitiveBatch.cs" />
     <Compile Include="IInteractive.cs" />
